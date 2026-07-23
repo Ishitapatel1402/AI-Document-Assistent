@@ -3,7 +3,11 @@ from backend.chatbot import get_response
 from backend.pdf_reader import extract_text_from_pdf
 from backend.text_splitter import split_text
 from backend.embeddings import load_embedding_model
-from backend.vector_store import create_vector_store
+from backend.vector_store import (
+    create_vector_store,
+    save_vector_store,
+    load_vector_store,
+)
 from backend.rag import generate_rag_prompt
 
 # ---------------------------
@@ -21,7 +25,12 @@ st.set_page_config(
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "vector_store" not in st.session_state:
-    st.session_state.vector_store = None
+
+    embedding_model = load_embedding_model()
+
+    st.session_state.vector_store = load_vector_store(
+        embedding_model
+    )
 
 # ---------------------------
 # Sidebar
@@ -82,12 +91,16 @@ if process_button:
         # Step 4 - Create Vector Store
         with st.spinner("📚 Creating vector database..."):
             vector_store = create_vector_store(
-                chunks,
-                embedding_model
-            )
+            chunks,
+            embedding_model
+        )
 
-        # Save in Session
+        # Save FAISS index to disk
+        save_vector_store(vector_store)
+
+        # Save in session
         st.session_state.vector_store = vector_store
+
 
         st.success("✅ Document processed successfully!")
 

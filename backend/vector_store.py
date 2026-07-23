@@ -1,10 +1,8 @@
 from langchain_community.vectorstores import FAISS
+import os
 
 
 def create_vector_store(chunks, embedding_model):
-    """
-    Creates a FAISS vector store from text chunks.
-    """
 
     vector_store = FAISS.from_texts(
         texts=chunks,
@@ -12,3 +10,23 @@ def create_vector_store(chunks, embedding_model):
     )
 
     return vector_store
+
+
+def save_vector_store(vector_store):
+
+    os.makedirs("vectorstore", exist_ok=True)
+
+    vector_store.save_local("vectorstore")
+
+
+def load_vector_store(embedding_model):
+
+    if os.path.exists("vectorstore"):
+
+        return FAISS.load_local(
+            "vectorstore",
+            embedding_model,
+            allow_dangerous_deserialization=True
+        )
+
+    return None
