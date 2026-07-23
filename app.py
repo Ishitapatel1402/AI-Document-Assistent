@@ -1,3 +1,5 @@
+import os
+
 import streamlit as st
 from backend.chatbot import get_response
 from backend.pdf_reader import extract_text_from_pdf
@@ -9,6 +11,8 @@ from backend.vector_store import (
     load_vector_store,
 )
 from backend.rag import generate_rag_prompt
+from backend.metadata import save_metadata, load_metadata
+from backend.hash_utils import generate_file_hash
 
 # ---------------------------
 # Page Configuration
@@ -32,6 +36,9 @@ if "vector_store" not in st.session_state:
         embedding_model
     )
 
+if "metadata" not in st.session_state:
+    st.session_state.metadata = load_metadata()
+
 # ---------------------------
 # Sidebar
 # ---------------------------
@@ -48,9 +55,27 @@ with st.sidebar:
 
     st.markdown("---")
 
-    if st.session_state.vector_store is not None:
+    st.markdown("---")
+
+    if (
+        st.session_state.vector_store is not None
+        and st.session_state.metadata is not None
+    ):
+
+        metadata = st.session_state.metadata
+
         st.success("🟢 Document Ready")
+
+        st.info(
+            f"""
+    📄 **Document:** {metadata['document_name']}
+
+    📑 **Chunks:** {metadata['chunk_count']}
+    """
+        )
+
     else:
+
         st.warning("🟡 No document processed")
 
     st.markdown("---")
@@ -70,42 +95,75 @@ if process_button:
 
     else:
 
+        # Save uploaded PDF temporarily
         with open("temp.pdf", "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        # Step 1 - Read PDF
-        with st.spinner("📄 Reading PDF..."):
-            text = extract_text_from_pdf("temp.pdf")
+        # Generate hash of uploaded file
+        current_hash = generate_file_hash("temp.pdf")
 
+        # Load previous metadata
+        metadata = load_metadata()
 
-        # Step 2 - Split Text
-        with st.spinner("✂ Splitting document into chunks..."):
-            chunks = split_text(text)
+        # -----------------------------
+        # Same document? Load FAISS
+        # -----------------------------
+        if (
+            metadata is not None
+            and metadata["file_hash"] == current_hash
+        ):
 
-
-        # Step 3 - Load Embedding Model
-        with st.spinner("🧠 Loading embedding model..."):
             embedding_model = load_embedding_model()
 
+            st.session_state.vector_store = load_vector_store(
+                embedding_model
+            )
 
-        # Step 4 - Create Vector Store
-        with st.spinner("📚 Creating vector database..."):
-            vector_store = create_vector_store(
-            chunks,
-            embedding_model
-        )
+            st.session_state.metadata = metadata
 
-        # Save FAISS index to disk
-        save_vector_store(vector_store)
+            st.success("✅ Existing document detected. Loaded saved vector database.")
 
-        # Save in session
-        st.session_state.vector_store = vector_store
+        # -----------------------------
+        # New document? Process it
+        # -----------------------------
+        else:
 
+            # Step 1 - Read PDF
+            with st.spinner("📄 Reading PDF..."):
+                text = extract_text_from_pdf("temp.pdf")
 
-        st.success("✅ Document processed successfully!")
+            # Step 2 - Split Text
+            with st.spinner("✂ Splitting document into chunks..."):
+                chunks = split_text(text)
 
-        import os
+            # Step 3 - Load Embedding Model
+            with st.spinner("🧠 Loading embedding model..."):
+                embedding_model = load_embedding_model()
 
+            # Step 4 - Create Vector Store
+            with st.spinner("📚 Creating vector database..."):
+                vector_store = create_vector_store(
+                    chunks,
+                    embedding_model
+                )
+
+            # Save FAISS
+            save_vector_store(vector_store)
+
+            # Save Metadata
+            save_metadata(
+                uploaded_file.name,
+                len(chunks),
+                current_hash
+            )
+
+            # Update Session
+            st.session_state.vector_store = vector_store
+            st.session_state.metadata = load_metadata()
+
+            st.success("✅ Document processed successfully!")
+
+        # Delete temporary file
         if os.path.exists("temp.pdf"):
             os.remove("temp.pdf")
 
