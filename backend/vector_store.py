@@ -3,10 +3,28 @@ import os
 
 
 def create_vector_store(chunks, embedding_model):
+    """
+    Creates a FAISS vector database while storing page numbers
+    as metadata.
+    """
+
+    texts = []
+    metadatas = []
+
+    for chunk in chunks:
+
+        texts.append(chunk["text"])
+
+        metadatas.append(
+            {
+                "page": chunk["page"]
+            }
+        )
 
     vector_store = FAISS.from_texts(
-        texts=chunks,
-        embedding=embedding_model
+        texts=texts,
+        embedding=embedding_model,
+        metadatas=metadatas
     )
 
     return vector_store

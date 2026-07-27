@@ -3,10 +3,10 @@ from backend.retriever import retrieve_chunks
 
 def generate_rag_prompt(vector_store, query):
     """
-    Builds the prompt using retrieved document context.
+    Creates a RAG prompt and returns the source pages.
     """
 
-    context = retrieve_chunks(
+    context, pages = retrieve_chunks(
         vector_store,
         query
     )
@@ -16,26 +16,26 @@ You are an AI Document Intelligence Assistant.
 
 Answer ONLY using the provided document context.
 
-If the answer cannot be found in the document,
+If the answer is not present in the document,
 reply exactly:
 
 "I could not find this information in the uploaded document."
 
-======================
+=========================
 DOCUMENT
-======================
+=========================
 
 {context}
 
-======================
+=========================
 QUESTION
-======================
+=========================
 
 {query}
 
-======================
+=========================
 ANSWER
-======================
+=========================
 """
 
-    return prompt
+    return prompt, pages

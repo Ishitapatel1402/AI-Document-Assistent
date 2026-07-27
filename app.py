@@ -185,7 +185,15 @@ for message in st.session_state.messages:
 # ---------------------------
 # User Input
 # ---------------------------
-prompt = st.chat_input("Ask me anything...")
+if st.session_state.vector_store is None:
+    prompt = st.chat_input(
+        "Upload and process a PDF first...",
+        disabled=True
+    )
+else:
+    prompt = st.chat_input(
+        "Ask a question about your document..."
+    )
 
 if prompt:
 
@@ -208,39 +216,32 @@ if prompt:
 
                 if st.session_state.vector_store is not None:
 
-                    rag_prompt = generate_rag_prompt(
+                    rag_prompt, pages = generate_rag_prompt(
                         st.session_state.vector_store,
                         prompt
                     )
 
                     response = get_response(rag_prompt)
 
-                else:
+                    if pages:
 
-                    response = (
-                        "⚠ Please upload and process a document first."
-                    )
+                        if len(pages) == 1:
+
+                            response += f"\n\n📄 Source: Page {pages[0]}"
+
+                        else:
+
+                            page_list = ", ".join(str(page) for page in pages)
+
+                            response += f"\n\n📄 Sources: Pages {page_list}"
 
             except Exception as e:
 
-                error_message = str(e)
+                import traceback
 
-                if "503" in error_message:
-                    response = (
-                        "⚠️ Gemini servers are currently busy.\n\n"
-                        "Please wait a few seconds and try again."
-                    )
+                st.error(traceback.format_exc())
 
-                elif "400" in error_message:
-                    response = (
-                        "⚠️ Invalid request. Please try asking your question again."
-                    )
-
-                else:
-                    response = (
-                        "⚠️ Something went wrong.\n\n"
-                        "Please try again."
-                    )
+                response = f"⚠ {type(e).__name__}: {e}"
 
             st.markdown(response)
 

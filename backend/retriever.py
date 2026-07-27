@@ -1,6 +1,6 @@
-def retrieve_chunks(vector_store, query, k=1):
+def retrieve_chunks(vector_store, query, k=3):
     """
-    Retrieve top-k relevant chunks.
+    Retrieve the top-k relevant chunks and their page numbers.
     """
 
     docs = vector_store.similarity_search(
@@ -13,4 +13,13 @@ def retrieve_chunks(vector_store, query, k=1):
         for doc in docs
     )
 
-    return context
+    pages = sorted(
+        list(
+            set(
+                doc.metadata["page"]
+                for doc in docs
+            )
+        )
+    )
+
+    return context, pages
