@@ -1,22 +1,44 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ==========================
 # Virtual Environment
+# ==========================
 venv/
 
+# ==========================
 # Environment Variables
+# ==========================
 .env
 
-# Python Cache
-__pycache__/
-*.pyc
+# ==========================
+# Streamlit Secrets
+# ==========================
+.streamlit/secrets.toml
 
-# Vector Database
-data/vectorstore/
+# ==========================
+# Generated Vector Store
+# ==========================
+vectorstore/
 
-# Uploaded PDFs (optional)
-data/uploads/
+# ==========================
+# Temporary Files
+# ==========================
+temp.pdf
 
-# VS Code
+# ==========================
+# IDE
+# ==========================
 .vscode/
+.idea/
 
-# Operating System Files
+# ==========================
+# Operating System
+# ==========================
 .DS_Store
 Thumbs.db
