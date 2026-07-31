@@ -20,6 +20,9 @@ class SentenceTransformerEmbeddings:
             show_progress_bar=False,
         ).tolist()
 
+    def __call__(self, text):
+        return self.embed_query(text)
+
 
 def load_embedding_model():
 
